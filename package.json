@@ -7,14 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "postinstall": "echo 'Ready'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^7.2.0",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tailwindcss/postcss": "^4.1.18",
     "@tanstack/react-query": "^5.90.12",
@@ -39,6 +38,6 @@
     "@types/simple-peer": "^9.11.9",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.0.10",
-    "prisma": "^7.2.0"
+    "@types/node": "22.0.0"
   }
 }
