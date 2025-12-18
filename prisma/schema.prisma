@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Auth
+  walletAddress String? @unique
+  ensName String?
+  twitterId String? @unique
+  twitterHandle String?
+  email String?
+
+  // Profile
+  displayName String?
+  bio String?
+  profileNFT Json? // {contract, tokenId, imageUrl}
+
+  // Crypto preferences
+  role Role @default(BUILDER)
+  chains Chain[]
+  interests Interest[]
+  experience Experience @default(ACTIVE)
+
+  // Credibility (from Alchemy)
+  walletAge Int? // days since first transaction
+  txCount Int? // total transactions
+  nftCount Int? // total NFTs owned
+
+  // Settings
+  allowPortfolioPreview Boolean @default(false)
+  autoTweet Boolean @default(false)
+
+  // Stats
+  totalMatches Int @default(0)
+  totalRating Float @default(0)
+  ratingCount Int @default(0)
+  reportCount Int @default(0)
+  skipCount Int @default(0)
+  lastSkipReset DateTime @default(now())
+
+  // Relations
+  matchesAsUserA Match[] @relation("MatchUserA")
+  matchesAsUserB Match[] @relation("MatchUserB")
+  ratingsGiven Rating[] @relation("RatingsGiven")
+  ratingsReceived Rating[] @relation("RatingsReceived")
+  reportsGiven Report[] @relation("ReportsGiven")
+  reportsReceived Report[] @relation("ReportsReceived")
+
+  @@index([walletAddress])
+  @@index([twitterId])
+}
+
+model Match {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  endedAt DateTime?
+
+  userAId String
+  userBId String
+  userA User @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  mode ChatMode @default(VIDEO)
+  duration Int? // seconds
+
+  // Outcome
+  status MatchStatus @default(ACTIVE)
+  skippedBy String? // userId who skipped
+
+  // Relations
+  ratings Rating[]
+  reports Report[]
+
+  @@index([userAId])
+  @@index([userBId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model Rating {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  fromUserId String
+  toUserId String
+  fromUser User @relation("RatingsGiven", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser User @relation("RatingsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  matchId String
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  rating Int // 1-5 stars
+  feedback String? // optional text feedback
+
+  @@unique([fromUserId, matchId])
+  @@index([toUserId])
+  @@index([matchId])
+}
+
+model Report {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  reporterId String
+  reportedId String
+  reporter User @relation("ReportsGiven", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported User @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  matchId String
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  reason String
+  description String?
+  reviewed Boolean @default(false)
+  action String? // Action taken by moderator
+
+  @@index([reportedId])
+  @@index([reviewed])
+  @@index([matchId])
+}
+
+enum Role {
+  AIRDROP_HUNTER
+  NFT_TRADER
+  CONTENT_CREATOR
+  BUILDER
+  AMBASSADOR
+  DEGEN
+}
+
+enum Chain {
+  ETHEREUM
+  SOLANA
+  BASE
+  ARBITRUM
+  OPTIMISM
+  POLYGON
+  AVALANCHE
+  BSC
+}
+
+enum Interest {
+  DEFI
+  NFTS
+  AIRDROPS
+  MEMECOINS
+  GAMING
+  AI_AGENTS
+  RWA
+  DAOS
+  TRADING
+  STAKING
+}
+
+enum Experience {
+  NEW // < 1 year
+  ACTIVE // 1-3 years
+  OG // 3+ years
+}
+
+enum ChatMode {
+  VIDEO
+  VOICE
+  TEXT
+}
+
+enum MatchStatus {
+  ACTIVE
+  COMPLETED
+  SKIPPED
+  REPORTED
+}
